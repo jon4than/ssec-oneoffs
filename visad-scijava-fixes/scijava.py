@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+
 import fnmatch
 import logging
 import os
 
 # order is important!
+# TODO(jon): just switch to dictionary
 old_packages = set([
     ('com.sun.j3d.utils.scenegraph.io.state.com.sun.j3d', 'org.scijava.java3d.utils.scenegraph.io.state.org.scijava.java3d'),
     ('com.sun.j3d.utils.scenegraph.io.state.javax.media.j3d', 'org.scijava.java3d.utils.scenegraph.io.state.org.scijava.java3d'),
@@ -11,7 +14,20 @@ old_packages = set([
     ('javax.vecmath', 'org.scijava.vecmath')
 ])
 
+# path to the visad source code you'd like to modify. 
+# this directory will be recursively searched for '*.java' files.
 VISAD_SRC = ''
+
+# it's probably more straightforward to use an example for OLD_PREFIX and 
+# NEW_PREFIX.
+#
+# Current file: '~/work/visad/core/src/visad/meteorology/ImageSequenceImpl.java'
+# 
+# OLD_PREFIX would be '~/work/visad'
+# NEW_PREFIX could be '/tmp/scijava-visad'
+# 
+# This would result in the modified file being written out to 
+# '/tmp/scijava-visad/core/src/visad/meteorology/ImageSequenceImpl.java'
 
 OLD_PREFIX = ''
 
@@ -24,11 +40,13 @@ def find_files(path, mask):
 
 def open_files(files, mode='r'):
     for f in files:
+        logging.info('open %s' % f)
         yield open(f, mode)
 
 def read_files(handles):
     for handle in handles:
         yield handle.name, (line for line in handle)
+        
 
 def fix_imports(pairs):
     for fname, line_gen in pairs:
@@ -70,17 +88,16 @@ def scijava_imports(visad_dir):
     
     save_files(corrected_lines)
 
-def scijava_imports2(visad_dir):
+def scijava_imports2(visad_dir, old_path, new_path):
     java_files       = find_files(visad_dir, '*.java')
     file_handles     = open_files(java_files)
     current_lines    = read_files(file_handles)
-    corrected_output = fix_everything(current_lines, OLD_PREFIX, NEW_PREFIX)
+    corrected_output = fix_everything(current_lines, old_path, new_path)
     
     save_files(corrected_output)
 
 def main():
-    # scijava_imports('/Users/jbeavers/work/idea/visad/core')
-    scijava_imports2(VISAD_SRC)
+    scijava_imports2(VISAD_SRC, OLD_PREFIX, NEW_PREFIX)
 
 if __name__ == '__main__':
     logging.basicConfig(format='! %(asctime)s - %(levelname)s: %(message)s', datefmt='%Y-%m-%d %I:%M:%S%p', level=logging.DEBUG)
